@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
 
-  var Park = global.Park, Tour = global.Tour, Renderer = global.Renderer;
+  var Park = global.Park, Tour = global.Tour, Renderer = global.Renderer, I18n = global.I18n;
 
   var el = {};
   var pinned = null;          // a stop the viewer clicked, held until they clear it
@@ -17,6 +17,15 @@
      'progressBar', 'pinNote'].forEach(function (k) { el[k] = $('ui-' + k); });
 
     buildStopList();
+    applyLanguage();
+    $('btn-language').addEventListener('click', function () {
+      I18n.toggle();
+      applyLanguage();
+      lastPainted = null;
+      render(pinned || Park.stopById[Tour.state.stage] || Park.stops[0]);
+      paint();
+      document.dispatchEvent(new Event('chiptycoon:languagechange'));
+    });
 
     $('btn-play').addEventListener('click', function () { Tour.toggle(); paint(true); });
     $('btn-step').addEventListener('click', function () { Tour.step(); });
@@ -46,7 +55,7 @@
       var open = !g.classList.contains('open');
       g.classList.toggle('open', open);
       sheet.setAttribute('aria-expanded', String(open));
-      sheet.querySelector('.sheet-label').textContent = open ? 'Show less' : 'Read more';
+      updateGuideLabels();
       if (open) g.scrollTop = 0;
     });
 
@@ -55,13 +64,34 @@
       var p = $('guide');
       var hide = !p.classList.contains('hidden');
       p.classList.toggle('hidden', hide);
-      pbtn.textContent = hide ? 'Show guide' : 'Hide guide';
+      updateGuideLabels();
       pbtn.setAttribute('aria-expanded', String(!hide));
     });
 
     Tour.on(function (name, id) {
       if (name === 'stage' && !pinned) showStop(Park.stopById[id], false);
       if (name === 'reset') { pinned = null; lastPainted = null; }
+    });
+  }
+
+  var guideLabels = {
+    showGuide: 'Show guide', hideGuide: 'Hide guide',
+    showLess: 'Show less', readMore: 'Read more'
+  };
+
+  function updateGuideLabels() {
+    var guide = $('guide');
+    var panelKey = guide.classList.contains('hidden') ? 'showGuide' : 'hideGuide';
+    var sheetKey = guide.classList.contains('open') ? 'showLess' : 'readMore';
+    $('btn-panel').textContent = I18n.t(panelKey, guideLabels[panelKey]);
+    $('sheet-handle').querySelector('.sheet-label').textContent = I18n.t(sheetKey, guideLabels[sheetKey]);
+  }
+
+  function applyLanguage() {
+    I18n.apply(document);
+    updateGuideLabels();
+    Park.stops.forEach(function (stop, i) {
+      el.stopList.children[i].lastChild.textContent = I18n.stop(stop, 'name');
     });
   }
 
@@ -72,7 +102,10 @@
       var b = document.createElement('button');
       b.className = 'stop-chip act' + s.act;
       b.dataset.id = s.id;
-      b.innerHTML = '<i>' + (i + 1) + '</i>' + s.name;
+      var number = document.createElement('i');
+      number.textContent = i + 1;
+      b.appendChild(number);
+      b.appendChild(document.createTextNode(s.name));
       b.addEventListener('click', function () {
         pinned = null;
         Tour.jumpTo(s.id);
@@ -90,7 +123,7 @@
     if (!g || !h || !h.offsetParent) return;
     g.classList.remove('open');
     h.setAttribute('aria-expanded', 'false');
-    h.querySelector('.sheet-label').textContent = 'Read more';
+    updateGuideLabels();
   }
 
   function showStop(stop, isPin) {
@@ -108,13 +141,15 @@
     if (lastPainted === stop.id && !pinned) return;
     lastPainted = stop.id;
     var n = Park.stops.indexOf(stop) + 1;
-    el.chip.textContent = 'Stop ' + n + ' of ' + Park.stops.length;
+    el.chip.textContent = I18n.t('stopCount', 'Stop {n} of {total}', { n: n, total: Park.stops.length });
     el.chip.className = 'chip act' + stop.act;
-    el.name.textContent = stop.name;
-    el.short.textContent = stop.short;
-    el.body.textContent = stop.body;
-    el.tip.innerHTML = '<b>Tycoon tip:</b> ' + stop.tip;
-    el.hudNote.textContent = ACT_NAME[stop.act] || '';
+    el.name.textContent = I18n.stop(stop, 'name');
+    el.short.textContent = I18n.stop(stop, 'short');
+    el.body.textContent = I18n.stop(stop, 'body');
+    var tipLabel = document.createElement('b');
+    tipLabel.textContent = I18n.t('tip', 'Tycoon tip:');
+    el.tip.replaceChildren(tipLabel, ' ' + I18n.stop(stop, 'tip'));
+    el.hudNote.textContent = I18n.t('act' + stop.act, ACT_NAME[stop.act] || '');
 
     var chips = el.stopList.children;
     for (var i = 0; i < chips.length; i++) {
@@ -149,16 +184,16 @@
     el.dwell.hidden = !(s.dwellTotal > 0 && s.dwellLeft > 0);
     el.dwellBar.style.width = (pct * 100).toFixed(1) + '%';
     el.dwellHint.textContent = s.reading
-      ? 'reading stop · press Space to hold it here'
-      : 'moving on';
+      ? I18n.t('reading', 'reading stop · press Space to hold it here')
+      : I18n.t('moving', 'moving on');
 
     el.hudStop.textContent = s.seenCount + ' / ' + Park.stops.length;
-    el.hudLayer.textContent = s.lap + ' of ' + s.laps + ' shown';
+    el.hudLayer.textContent = I18n.t('layerCount', '{n} of {total} shown', { n: s.lap, total: s.laps });
     el.hudBatch.textContent = '#' + s.batch;
     el.progressBar.style.width = (Tour.progress() * 100).toFixed(1) + '%';
 
     if (s.tourDone && !s.reading) {
-      el.hudNote.textContent = 'Every stop explained · running at watching speed';
+      el.hudNote.textContent = I18n.t('tourDone', 'Every stop explained · running at watching speed');
     }
   }
 

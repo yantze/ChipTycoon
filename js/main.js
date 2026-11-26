@@ -3,14 +3,14 @@
   'use strict';
 
   var Iso = global.Iso, Park = global.Park, Tour = global.Tour,
-      Renderer = global.Renderer, UI = global.UI;
+      Renderer = global.Renderer, UI = global.UI, I18n = global.I18n;
 
   var canvas = document.getElementById('stage');
   var tooltip = document.getElementById('tooltip');
 
   var cam = { x: 0, y: 0, scale: 1, ox: 0, oy: 0, dpr: 1 };
   var follow = true;
-  var hover = null;
+  var hover = null, tipAt = null;
   var pointer = { down: false, x: 0, y: 0, moved: 0 };
   var pinch = null;
   var viewW = 0, viewH = 0;
@@ -214,12 +214,19 @@
 
   function showTip(x, y, s) {
     tooltip.hidden = false;
-    tooltip.innerHTML = '<b>' + s.name + '</b>' + s.short;
+    tipAt = { x: x, y: y, stop: s };
+    var name = document.createElement('b');
+    name.textContent = I18n.stop(s, 'name');
+    tooltip.replaceChildren(name, I18n.stop(s, 'short'));
     var r = tooltip.getBoundingClientRect();
     tooltip.style.left = Math.min(x + 14, viewW - r.width - 12) + 'px';
     tooltip.style.top = Math.min(y + 14, viewH - r.height - 12) + 'px';
   }
-  function hideTip() { tooltip.hidden = true; }
+  function hideTip() { tooltip.hidden = true; tipAt = null; }
+  document.addEventListener('chiptycoon:languagechange', function () {
+    measure();
+    if (tipAt) showTip(tipAt.x, tipAt.y, tipAt.stop);
+  });
 
   document.getElementById('zoom-in').addEventListener('click', function () { zoomStep(1.35); });
   document.getElementById('zoom-out').addEventListener('click', function () { zoomStep(1 / 1.35); });
@@ -232,7 +239,7 @@
   function setFollow(v) { follow = v; followBox.checked = v; }
 
   document.addEventListener('keydown', function (e) {
-    if (e.target.tagName === 'INPUT') return;
+    if (e.target.tagName === 'INPUT' || (e.key === ' ' && e.target.id === 'btn-language')) return;
     switch (e.key.toLowerCase()) {
       case ' ': e.preventDefault(); Tour.toggle(); UI.paint(true); break;
       case 's': Tour.step(); break;

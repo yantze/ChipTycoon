@@ -686,7 +686,7 @@
     ctx.fillStyle = C.gold;
     ctx.font = 'bold 15px "Trebuchet MS", Verdana, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('LAYER ' + ((W && W.lap) || 1), p.x, p.y - 13);
+    ctx.fillText(global.I18n.t('layerSign', 'LAYER {n}', { n: (W && W.lap) || 1 }), p.x, p.y - 13);
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }});
 
@@ -813,7 +813,7 @@
 
     /* Kept to one short word: the board is drawn at a fixed size in screen space,
        so a long one would swamp the wall once the camera pulls back. */
-    sign(ctx, X + 7.7, face, H - 0.1, full > 0 ? 'ONLINE' : 'IDLE',
+    sign(ctx, X + 7.7, face, H - 0.1, full > 0 ? global.I18n.t('online', 'ONLINE') : global.I18n.t('idle', 'IDLE'),
          full > 0 ? '#4fe0b8' : '#6b7784');
   }});
 

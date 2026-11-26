@@ -390,9 +390,9 @@
   /* A name tag riding above the cart. Drawn in screen space with the other
      signage so it stays upright and legible at any zoom. */
   function drawCartTag(ctx, cam, p, s) {
-    var text = Park.cargoLabels[s.cargo];
+    var text = Park.cargoLabels[s.cargo] && global.I18n.t('cargo.' + s.cargo, Park.cargoLabels[s.cargo]);
     if (!text || cam.scale < 0.35) return;
-    if (Park.loopCargo[s.cargo] && s.layers > 0) text += ' · layer ' + s.layers;
+    if (Park.loopCargo[s.cargo] && s.layers > 0) text += global.I18n.t('cargoLayer', ' · layer {n}', { n: s.layers });
 
     var w = Iso.project(p.x, p.y, p.z + 1.9);
     var sx = w.x * cam.scale + cam.ox;
@@ -516,7 +516,7 @@
           sy > ctx.canvas.height / cam.dpr + 40) continue;
 
       var on = st.id === activeId;
-      var text = (i + 1) + '. ' + st.name;
+      var text = (i + 1) + '. ' + global.I18n.stop(st, 'name');
       var tw = ctx.measureText(text).width + 16;
 
       var clash = false;
